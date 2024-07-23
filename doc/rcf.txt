@@ -1,0 +1,162 @@
+Project MyTeams
+
+Guillaume Brocard (guillaume.brocard@epitech.eu)
+Vincent Zhong (vincent.zhong@epitech.eu)
+Pierre-Alexandre Delgado (pierre-alexandre.delgado-arevalo@epitech.eu)
+
+EPITECH, promo 2025
+
+This RFC documentation is our protocal for the project "Myteams" a second year project at Epitech
+
+Table of content:
+    1. The project
+    2. Status 2OO
+    3. Status 300
+    4. Status 400
+    5. Status 500
+
+help : null
+                                 ___________________________
+                                |            |              |
+                                | C = Client |  S = Serveur |
+                                |____________|______________|
+
+User = Uid, nom, status
+
+
+430 already exist
+502 interdit (pas connecté, écrire dans une team auquel je suis pas inscrit, etc..)
+
+login:  201 connecté
+        501 deja connecté
+        C : (uid, nom) -> S       | server_event_user_logged_in ou server_event_user_created
+        S : 201 (uid, nom) -> C   | client_event_logged_in
+
+
+logout: 200 ok
+        502 interdit
+        C : null -> S             | server_event_user_logged_out
+        S : 200 -> C              | client_event_logged_out
+
+users:  202 ok
+        502 interdit
+        C : null -> S                
+        S : (list user) -> C            | client_print_users
+
+user:   502 interdit
+        203 recois info
+        C : (uid) -> S
+        S : (uid, nom, status) -> C        | client_print_users
+
+send:   205 ok envoi messages
+        502 interdit
+        503 utilisateur inconnu
+        C (sender) : (uid receiver) (message) -> S              | server_event_private_message_sended
+        S : (uid sender, message) -> C (receiver)               | client_event_private_message_received
+
+messages:       300 ok, recois tous les messages
+                502 interdit
+                503 utilisateur inconnu
+                C : (uid) -> S
+                S : (uid sender, timestamp, message) -> C              | client_private_message_print_messages
+
+subscribe:      203 ajouté a la team (renvoi team)
+                502 interdit
+                504 team inconnu
+                C : (uid)-> S                   | server_event_user_subscribed
+                S : (null) -> C                 | client_print_subscribed
+
+subscribed:     301 envoi toutes les team de l'user (si pas de parametres)
+                302 envoi tous les utlisateurs de la teams demandé
+                504 team inconnu
+                502 interdit
+                C : (uid team) -> S
+                S : (list users of a team) -> C         | client_print_subscribed (je crois)
+
+                C : null -> S
+                S : (liste des teams auquel client est inscrit) -> C
+
+unsubscribe:    204 quitte team
+                502 interdit
+                504 team inconnu
+                C : (uid team) -> S                     | server_event_user_unsubscribed
+                S : null -> C                           | client_print_unsubscribed
+
+create team:    430 team exist
+                210 created team
+                504 team inconnu
+                310 Ping tous les utilisateurs connectés
+                311 Ping l'utilisateur qui a crée la team
+                C : (name, description) -> S                                    | server_event_team_created
+                S :  (uid team, name, description) -> C (créateur)              | client_print_team_created
+                S : (uid team, name, description) -> Tous les connectés         | client_event_team_created
+
+create channel: 430 channel exist
+                502 interdit
+                504 team inconnu
+                211 created channel
+                312 Ping les membres de la team
+                C : (name, description, team id depuis le user contexte) -> S   | server_event_channel_created
+                S : (uid channel, name, description) -> C                       | client_print_channel_created
+                S : (uid channel, name, descrption) -> C (team) | client_event_channel_created
+
+create thread:  430 thread exist
+                505 channel inconnu
+                502 interdit
+                212 created thread
+                314 Ping toute la team
+                
+                C : (title, body, team id + channel id depuis le user contexte) -> S      | server_event_thread_created
+                S : (uid thread, uid user, timestamp, title, body) -> C         | client_print_thread_created
+                S : (uid thread, uid user, timestamp, title, body) -> C (team)         | client_event_thread_created
+
+create reply:   506 thread inconnu
+                213 reply created
+                313 Ping tous l'utilisateur qui a cree le thread
+                502 interdit
+                C (sender) : (message, team id + channel id + thread id depuis le user contexte) -> S          | server_event_reply_created
+                S : (uid thread, uid user, reply timestamp, message) -> C (sender)      | client_print_reply_created
+                S : (uid team, uid thread, uid user, message) -> C (receiver)           | client_event_thread_reply_received
+
+list team:      504 team inconnu
+                502 interdit
+                320 liste toutes les teams
+                C : null -> S
+                S : (liste teams) (uid, name, description) -> C         |  client_print_teams
+
+list channel:   505 channel inconnu
+                502 interdit
+                321 liste tous les channels
+                C : (uid team depuis le contexte) -> S
+                S : (liste channel de la team) (uid, name, description) -> C       | client_team_print_channels
+
+list thread:    506 thread inconnu
+                502 interdit
+                C : (team id + uid channel depuis le contexte) -> S
+                S : (liste thread de la team) (uid thread, uid user, timestamp, title, body) -> C       | client_channel_print_threads
+
+list reply:     507 reply inconnu
+                502 interdit
+                C : (team id + channel id + uid thread depuis le contexte) -> S
+                S : (liste message du thread) (uid thread, uid user, timestamp, message) -> C           | client_thread_print_replies
+
+info user:      502 interdit
+                201 envoi info
+                C : null -> S
+                S : (uid, name, status) -> C            | client_print_user
+
+info team:      504 team inconnu
+                502 interdit
+                201 envoi info
+                C : (uid team depuis le contexte) -> S
+                S : (uid team, name, description) -> C          | client_print_team
+
+info channel:   505 channel inconnu
+                502 interdit
+                C : (team id + uid channel depuis le contexte) -> S
+                S : (uid channel, name, description) -> C               | client_print_channel
+
+info thread:    506 thread inconnu
+                502 interdit
+                C : (team id + channel id + uid thread depuis le contexte) -> S
+                S : (uid thread, uid user, timestamp, title, body) -> C         | client_print_thread
